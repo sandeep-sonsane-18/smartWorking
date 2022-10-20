@@ -27,6 +27,10 @@ Route::group([
         Route::post('savePropertyDetails', 'FetchPropertyFromAPI@savePropertyDetails')->name('savePropertyDetails');
 
         Route::get('fetchPropertyTypes', 'FetchPropertyFromAPI@fetchPropertyTypes')->name('fetchPropertyTypes');
+
+        Route::get('fetchPropertyDataToUpdate/{id}', 'FetchPropertyFromAPI@fetchPropertyDataToUpdate')->name('fetchPropertyDataToUpdate');
+
+        Route::post('deleteProperty', 'FetchPropertyFromAPI@deleteProperty')->name('deleteProperty');
 });
 
 Route::get('fetchPropertiesFromApi', 'FetchPropertyFromAPI@fetchPropertiesFromApi')->name('fetchPropertiesFromApi');

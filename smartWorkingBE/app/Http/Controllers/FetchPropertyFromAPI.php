@@ -118,7 +118,7 @@ class FetchPropertyFromAPI extends Controller
 
         //fetch data from properties
 
-        $propData = Property::orderBy('property_type_id', 'ASC')->get();
+        $propData = Property::orderBy('id', 'DESC')->get();
 
         return response()->json($propData);
     }
@@ -132,8 +132,9 @@ class FetchPropertyFromAPI extends Controller
 
         //fetch data from properties
 
-        $data1 = Property::where("property_type_id", $id)->first();
-        $data2 = PropertyType::where("property_id", $id)->first();
+        $data1 = Property::where("id", $id)->first();
+        $data2 = DB::table('property_types')->select('property_id','title', 'description')->where('property_id','=',$data1->property_id)->first();
+        // $data2 = PropertyType::find("")->where("property_id", $id)->first();
 
         $mergedData = $this->mergeData($data1, $data2);
 
@@ -153,7 +154,74 @@ class FetchPropertyFromAPI extends Controller
 
     public function savePropertyDetails(Request $request) {
 
-        return response()->json($request->all());
+        // $isUpdate = Boolean($request->isUpdate);
+
+        // if($isUpdate) {
+        //     $newPropData = $request->all();
+        // } else {
+        //     $newPropData = array(
+        //         "country" => $request->country
+        //         "county" => $request->county
+        //         "description" => $request->description
+        //         "displayable_name" => $request->displayable_name
+        //         "for_sale_rent" => $request->for_sale_rent
+        //         "image_url" => $request->image_url
+        //         "no_of_bathrooms" => $request->no_of_bathrooms
+        //         "no_of_bedrooms" => $request->no_of_bedrooms
+        //         "postcode" => $request->postcode
+        //         "price" => $request->price
+        //         "property_type" => $request->property_type
+        //         "town" => $request->town
+        //     );
+        // }
+
+        try {
+            $newPropData = $request->all();
+
+            if (isset($_FILES["image_url"]) && !empty($_FILES["image_url"])) {
+
+                $path = public_path('uploads');
+
+                $filename = 'property_photo_'.date('YmdHis').'.jpg';
+                $filenamethumb = 'property_thumb_photo_'.date('YmdHis').'.jpg';
+
+                $destinationPath = 'uploads';
+                $myimage = $request->image_url->getClientOriginalName();
+
+                $request->image_url->move(public_path($destinationPath), $myimage);
+                // $request->image->move(public_path($destinationPath), $myimagethumb);
+
+                $newPropData['image_url'] = url('/uploads/'.$myimage);
+                $newPropData['thumbnail_url'] = url('/uploads/'.$myimage);
+            }
+
+            $newPropData['id'] = isset($newPropData['id']) && !empty($newPropData['id']) ? $newPropData['id'] : '';
+
+            $propTypeData = PropertyType::where('title', $newPropData['property_type'])->first();
+
+            $newPropData['property_type_id'] = $propTypeData['property_id'];
+
+            $newSave = Property::updateOrCreate(
+                        ['id' => $newPropData['id']],
+                        $newPropData
+                        );
+
+            $response = ['statusCode' => 200, 'message' => 'Datasaved successfully'];
+
+        } catch (Exception $e) {
+            $response = ['statusCode' => 400, 'message' => $e->getMessage()];
+        }
+
+        return response()->json($response);
+    }
+
+    public function fetchPropertyDataToUpdate(Request $request) {
+        $id = $request->id;
+        if (is_numeric($id) != 1 && $id == '') {
+            return response()->json("Only numbers are allowed!", Response::HTTP_BAD_REQUEST);
+        }
+
+
     }
 
     private function mergeData($data1, $data2) {
@@ -165,5 +233,15 @@ class FetchPropertyFromAPI extends Controller
 
         return $merged;
 
+    }
+
+    public function deleteProperty(Request $request) {
+        $id = $request->id;
+        if (is_numeric($id) != 1 && $id == '') {
+            return response()->json("Only numbers are allowed!", Response::HTTP_BAD_REQUEST);
+        }
+
+        $delete = Property::where('id', $id)->delete();
+        return response()->json("Property data deleted successfully");
     }
 }
